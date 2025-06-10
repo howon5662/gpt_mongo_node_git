@@ -1,30 +1,29 @@
+// ✅ 최종 server.js (Firebase 인증 제거 버전)
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const { MongoClient } = require("mongodb");
-require("dotenv").config();
-
 const { chatWithContext } = require("./index");
+require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const client = new MongoClient(process.env.MONGODB_URI);
 
+// 기본 라우터
 app.get("/", (req, res) => {
   res.send("서버 잘 살아있음!");
 });
 
-// 👉 미들웨어
+// 미들웨어 설정
 app.use(cors());
 app.use(bodyParser.json());
-
-// 👉 요청 타임아웃 설정 (선택 사항: 응답 지연 방지용)
 app.use((req, res, next) => {
-  res.setTimeout(30000); // 30초
+  res.setTimeout(30000); // 30초 타임아웃
   next();
 });
 
-// ✅ Flutter에서 메시지를 보낼 API
+// ✅ 대화 처리 (Firebase 인증 없이 user_id만 사용)
 app.post("/chat", async (req, res) => {
   const { user_id, message } = req.body;
 
@@ -37,11 +36,11 @@ app.post("/chat", async (req, res) => {
     res.json({ reply });
   } catch (err) {
     console.error("❌ GPT 처리 중 오류:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "서버 오류 발생" });
   }
 });
 
-// ✅ 서버 실행 전 DB 연결
+// MongoDB 연결 후 서버 실행
 (async () => {
   try {
     await client.connect();
