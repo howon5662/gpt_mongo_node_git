@@ -32,6 +32,15 @@ async function retrieveRAGResponse(userMessage) {
 }
 
 async function chatWithContext(userId, userMessage) {
+  const db = client.db(dbName);
+
+  // ✅ 사용자 자동 등록 (없을 경우에만)
+  await db.collection("users").updateOne(
+    { user_id: userId },
+    { $setOnInsert: { user_id: userId, created_at: new Date() } },
+    { upsert: true }
+  );
+
   const { messages, metadata } = await getUserContext(userId);
   const systemPrompt = buildSystemPrompt(metadata);
 
@@ -64,7 +73,6 @@ async function chatWithContext(userId, userMessage) {
     docs = [];
   }
 
-  const db = client.db(dbName);
   const collection = db.collection("conversations");
   await collection.insertOne({
     user_id: userId,
@@ -80,7 +88,6 @@ async function chatWithContext(userId, userMessage) {
   console.log("\n🧠 GPT 응답:", gptResponse);
   console.log("✅ 저장 완료");
 
-  // ✅ 더 유연한 "일기 작성" 조건
   const wantsDiary = extracted.some(
     msg => msg.role === "prompt" && msg.content.includes("일기")
   );
@@ -115,7 +122,6 @@ async function extractMetadataWithGPT(userMessage) {
             '- user가 대화 도중 밈을 사용하는 경우, 같이 사용해야해.\n' +
             `- user가 명확하게 스타일을 요구한 경우 추출해.\n\n` +
             `사용자 발화:\n${userMessage}`
-
       }
     ]
   });
@@ -129,9 +135,7 @@ async function extractMetadataWithGPT(userMessage) {
     const jsonText = raw.substring(start, end);
 
     const parsed = JSON.parse(jsonText);
-
-    // ⛑️ 안전 필터링: user/assistant 제거
-    const allowedRoles = ["emotion", "condition", "한 일", "favorite", "prompt","hate","routine"];
+    const allowedRoles = ["emotion", "condition", "한 일", "favorite", "prompt", "hate", "routine"];
     const filtered = parsed.filter(msg => allowedRoles.includes(msg.role));
 
     return Array.isArray(filtered) ? filtered : [];
@@ -139,10 +143,8 @@ async function extractMetadataWithGPT(userMessage) {
     console.warn("❌ JSON 파싱 실패:", raw);
     return [];
   }
-
 }
 
-// 👉 systemPrompt 생성 함수
 function buildSystemPrompt(metadata) {
   let traits = [];
 
@@ -158,10 +160,9 @@ function buildSystemPrompt(metadata) {
     : `넌 사용자와 친근하게 대화하는 AI야.`;
 }
 
-// 👉 실행 (터미널에서 테스트 용도)
 if (require.main === module) {
   (async () => {
-    const userId = "user123";
+    const userId = "user234";
     const userMessage = "좋은 아침! 퉁퉁퉁 사후르";
 
     await client.connect();
@@ -171,5 +172,4 @@ if (require.main === module) {
   })();
 }
 
-// 👉 서버에서 사용할 수 있도록 export
 module.exports = { chatWithContext };
