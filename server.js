@@ -1,9 +1,9 @@
-// ✅ 최종 server.js (Firebase 인증 제거 버전)
+// ✅ 최종 server.js (Firebase 인증 제거 + 요약 기능 추가)
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const { MongoClient } = require("mongodb");
-const { chatWithContext } = require("./index");
+const { chatWithContext, summarizeHistory } = require("./index"); // summarizeHistory 추가
 require("dotenv").config();
 
 const app = express();
@@ -37,6 +37,23 @@ app.post("/chat", async (req, res) => {
   } catch (err) {
     console.error("❌ GPT 처리 중 오류:", err);
     res.status(500).json({ error: "서버 오류 발생" });
+  }
+});
+
+// ✅ 요약 요청 처리 (Flutter -> GPT 요약)
+app.post("/summary", async (req, res) => {
+  const { history, tone } = req.body;
+
+  if (!history || !Array.isArray(history)) {
+    return res.status(400).json({ error: "history는 배열이어야 합니다." });
+  }
+
+  try {
+    const summary = await summarizeHistory(history, tone || "기본");
+    res.json({ response: summary });
+  } catch (err) {
+    console.error("❌ 요약 실패:", err);
+    res.status(500).json({ error: "요약 중 오류 발생" });
   }
 });
 
