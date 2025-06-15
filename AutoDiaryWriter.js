@@ -8,7 +8,7 @@ const dbName = "gpt_project";
 
 async function createAutoDiaries() {
   try {
-    await client.connect();
+    // ❌ client.connect()와 close()는 여기서 제거해야 함!
     const db = client.db(dbName);
     const usersCol = db.collection("user_settings");
 
@@ -21,16 +21,11 @@ async function createAutoDiaries() {
       const [hour, minute] = diaryTime.split(":").map(Number);
       const now = new Date();
 
-      // 오늘 날짜 기준으로 diarytime의 시각 구하기
       const diaryTimeToday = new Date();
-      diaryTimeToday.setHours(hour);
-      diaryTimeToday.setMinutes(minute);
-      diaryTimeToday.setSeconds(0);
-      diaryTimeToday.setMilliseconds(0);
+      diaryTimeToday.setHours(hour, minute, 0, 0);
 
       const diffMs = Math.abs(now - diaryTimeToday);
 
-      // 10분 이내인 경우에만 실행 (스케줄링 여유 고려)
       if (diffMs <= 10 * 60 * 1000) {
         console.log(`📝 ${userId}의 자동 일기 생성 중...`);
         await generateDiarySinceLast(userId);
@@ -38,10 +33,10 @@ async function createAutoDiaries() {
     }
   } catch (err) {
     console.error("❌ 자동 일기 생성 오류:", err);
-  } finally {
-    await client.close();
   }
+  // ✅ finally 블록에서 client.close() 삭제
 }
+
 
 // 단독 실행 가능하게 구성
 if (require.main === module) {
