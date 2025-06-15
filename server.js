@@ -71,6 +71,7 @@ app.get("/diary", async (req, res) => {
   }
 });
 
+//프론트 캘린더창에 emotion보내기(최종 우선순위 1등만 선정)
 app.get("/emotion", async (req, res) => {
   const { user_id, date } = req.query;
   if (!user_id || !date) {
@@ -131,6 +132,32 @@ app.get("/emotion", async (req, res) => {
     res.status(500).json({ error: "서버 오류" });
   }
 });
+
+// ✅ diaryTime 저장 라우터
+app.post("/diaryTime", async (req, res) => {
+  const { user_id, diaryTime } = req.body;
+
+  if (!user_id || !diaryTime) {
+    return res.status(400).json({ error: "user_id와 diaryTime이 필요합니다." });
+  }
+
+  try {
+    const db = client.db("gpt_project");
+    const settingsCol = db.collection("user_settings");   //DB의 user_settings에 저장
+
+    await settingsCol.updateOne(
+      { user_id },
+      { $set: { Diarytime: diaryTime } },
+      { upsert: true }        //변경된 diaryTime이 들어올 경우 새로운 값으로 덮어쓰기
+    );
+
+    res.json({ message: "diaryTime 저장 완료" });   
+  } catch (err) {
+    console.error("❌ diaryTime 저장 오류:", err);
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
 
 // MongoDB 연결 후 서버 실행
 (async () => {
