@@ -4,7 +4,7 @@ const cors = require("cors");
 const bodyParser = require("body-parser");
 const { MongoClient } = require("mongodb");
 const { chatWithContext, summarizeHistory } = require("./index");
-const { createAutoDiaries } = require("./auto_diary_writer"); // ⏰ 자동일기 추가
+const { createAutoDiaries } = require("./AutoDiaryWriter"); // ⏰ 자동일기 추가
 const cron = require("node-cron");
 require("dotenv").config();
 

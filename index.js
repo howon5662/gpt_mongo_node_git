@@ -156,7 +156,7 @@ async function summarizeHistory(history, tone = "기본") {
   const messages = [
     {
       role: "system",
-      content: `너는 사용자의 하루를 요약해주는 따뜻한 AI야. 말투는 "${tone}" 스타일이야. 대화 내용을 바탕으로 하루를 세 줄로 요약해줘.`,
+      content: `너는 사용자의 하루를 요약해주는 따뜻한 AI야. 말투는 "${tone}" 스타일이야. 대화 내용을 바탕으로 하루를 요약해서 일기를 작성해줘.`,
     },
     ...history.map(([role, content]) => ({ role, content })),
   ];
