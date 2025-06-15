@@ -1,4 +1,3 @@
-// ✅ 최종 server.js (Firebase 인증 제거 + 요약 기능 추가 + 자동일기 cron)
 const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
@@ -68,6 +67,48 @@ app.get("/diary", async (req, res) => {
     res.json({ diary: doc.diary });
   } catch (err) {
     console.error("❌ 일기 조회 오류:", err);
+    res.status(500).json({ error: "서버 오류" });
+  }
+});
+
+// ✅ 감정 이모지용 emotion 메타데이터 조회 라우터
+app.get("/emotion", async (req, res) => {
+  const { user_id, date } = req.query;
+  if (!user_id || !date) {
+    return res.status(400).json({ error: "user_id와 date가 필요합니다." });
+  }
+
+  try {
+    const db = client.db("gpt_project");
+    const diaryCol = db.collection("diary");
+    const convCol = db.collection("conversations");
+
+    // 해당 날짜의 마지막 일기 시간 (없으면 00:00 기준)
+    const lastDiary = await diaryCol.find({
+      user_id,
+      diaryDate: date
+    }).sort({ created_at: -1 }).limit(1).toArray();
+
+    const startTime = lastDiary[0]?.created_at || new Date(`${date}T00:00:00.000Z`);
+    const endTime = new Date(`${date}T23:59:59.999Z`);
+
+    const docs = await convCol.find({
+      user_id,
+      updated_at: { $gt: startTime, $lte: endTime }
+    }).toArray();
+
+    const emotions = [];
+    for (const doc of docs) {
+      for (const msg of doc.messages) {
+        if (msg.role === "emotion") {
+          emotions.push(msg.content);
+        }
+      }
+    }
+
+    res.json({ emotions }); // 예: { "emotions": ["피곤", "우울", "고마움"] }
+  } catch (err) {
+    console.error("❌ emotion 조회 오류:", err);
     res.status(500).json({ error: "서버 오류" });
   }
 });
