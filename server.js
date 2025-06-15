@@ -71,7 +71,6 @@ app.get("/diary", async (req, res) => {
   }
 });
 
-// ✅ 감정 이모지용 emotion 메타데이터 조회 라우터
 app.get("/emotion", async (req, res) => {
   const { user_id, date } = req.query;
   if (!user_id || !date) {
@@ -83,7 +82,6 @@ app.get("/emotion", async (req, res) => {
     const diaryCol = db.collection("diary");
     const convCol = db.collection("conversations");
 
-    // 해당 날짜의 마지막 일기 시간 (없으면 00:00 기준)
     const lastDiary = await diaryCol.find({
       user_id,
       diaryDate: date
@@ -97,16 +95,37 @@ app.get("/emotion", async (req, res) => {
       updated_at: { $gt: startTime, $lte: endTime }
     }).toArray();
 
-    const emotions = [];
+    const emotionList = [];
     for (const doc of docs) {
       for (const msg of doc.messages) {
         if (msg.role === "emotion") {
-          emotions.push(msg.content);
+          emotionList.push(msg.content);
         }
       }
     }
 
-    res.json({ emotions }); // 예: { "emotions": ["피곤", "우울", "고마움"] }
+    // 🎯 우선순위 기반 대표 감정 선정
+    const priority = {
+      "우울": 1,
+      "슬픔": 1,
+      "피곤": 2,
+      "불안": 2,
+      "고마움": 3,
+      "행복": 3,
+      "보통": 4
+    };
+
+    let finalEmotion = "보통";
+    for (const emotion of emotionList) {
+      if (
+        !priority[finalEmotion] ||
+        (priority[emotion] && priority[emotion] < priority[finalEmotion])
+      ) {
+        finalEmotion = emotion;
+      }
+    }
+
+    res.json({ emotion: finalEmotion }); // ✅ 하나만 보냄
   } catch (err) {
     console.error("❌ emotion 조회 오류:", err);
     res.status(500).json({ error: "서버 오류" });
