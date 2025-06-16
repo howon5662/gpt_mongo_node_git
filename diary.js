@@ -1,6 +1,7 @@
 // 📁 diary.js
 const OpenAI = require("openai");
 const { MongoClient } = require("mongodb");
+const { classifyEmotionToThreeLevel } = require("./index"); // ✅ 추가
 require("dotenv").config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -71,23 +72,31 @@ async function generateDiarySinceLast(userId, diaryDate = null) {
 
   const diaryText = res.choices[0].message.content;
 
-  // 🧠 감정 우선순위 계산
+  // 🧠 대표 감정 추출 (마지막 일기 이후 감정 리스트 중 하나만 추출)
   const emotionList = metadata.filter(m => m.role === "emotion").map(m => m.content);
-  const priority = { "우울": 1, "슬픔": 1, "피곤": 2, "불안": 2, "고마움": 3, "행복": 3, "보통": 4 };
-  let finalEmotion = "보통";
-  for (const e of emotionList) {
-    if (!priority[finalEmotion] || (priority[e] && priority[e] < priority[finalEmotion])) {
-      finalEmotion = e;
-    }
-  }
+  const finalEmotion = emotionList[0] ?? "보통"; // 하나라도 없으면 "보통" 대체
+
+  // ✅ GPT에게 3단계 감정 분류 요청
+  const emojiEmotion = await classifyEmotionToThreeLevel(finalEmotion);
 
   // ✅ KST 기준으로 저장할 일기 날짜 결정
   const diaryDateToSave = diaryDate ?? getKSTDateOnly();
 
+  // ✅ 중복 저장 방지
+  const alreadyExists = await diaryCol.findOne({
+    user_id: userId,
+    diaryDate: diaryDateToSave
+  });
+  if (alreadyExists) {
+    console.log(`🔁 ${userId}의 ${diaryDateToSave.toISOString().slice(0, 10)} 일기 이미 존재, 건너뜀`);
+    return;
+  }
+
+  // ✅ 최종 저장
   await diaryCol.insertOne({
     user_id: userId,
     diary: diaryText,
-    emotion: finalEmotion,
+    emotion: emojiEmotion, // ← "긍정", "보통", "부정" 중 하나
     diaryDate: diaryDateToSave
   });
 

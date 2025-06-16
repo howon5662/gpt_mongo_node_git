@@ -1,10 +1,10 @@
+// 📁 index.js
 const OpenAI = require("openai");
 const { MongoClient } = require("mongodb");
 const { getUserContext } = require("./context");
 const { cleanOldMetadata } = require("./cleanup");
 const { generateDiarySinceLast } = require("./diary");
 const axios = require("axios");
-
 require("dotenv").config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -31,7 +31,6 @@ async function retrieveRAGResponse(userMessage) {
 async function chatWithContext(userId, userMessage) {
   const db = client.db(dbName);
 
-  // 자동 등록 (처음 대화 시)
   await db.collection("users").updateOne(
     { user_id: userId },
     { $setOnInsert: { user_id: userId, created_at: new Date() } },
@@ -159,6 +158,41 @@ ${userMessage}
   }
 }
 
+// ✅ 감정 단어 → "긍정/보통/부정" 3단계로 분류
+async function classifyEmotionToThreeLevel(finalEmotion) {
+  const prompt = [
+    {
+      role: "system",
+      content: `
+넌 사용자의 감정 단어를 받아서 다음 셋 중 하나로 분류하는 AI야.
+
+반드시 아래 중 하나로만 판단해서 출력해:
+- 긍정
+- 보통
+- 부정
+
+설명 없이 감정 이름만 출력해.
+예시:
+"행복" → 긍정
+"고마움" → 긍정
+"피곤" → 보통
+"짜증" → 부정
+"우울" → 부정
+`.trim()
+    },
+    {
+      role: "user",
+      content: `감정 단어: ${finalEmotion}`
+    }
+  ];
+
+  const res = await openai.chat.completions.create({
+    model: "gpt-4o",
+    messages: prompt
+  });
+
+  return res.choices[0].message.content.trim(); // "긍정", "보통", "부정"
+}
 
 // ✅ system prompt 생성
 function buildSystemPrompt(metadata) {
@@ -176,7 +210,7 @@ function buildSystemPrompt(metadata) {
     : `넌 사용자와 친근하게 대화하는 AI야.`;
 }
 
-// ✅ 요약 생성 함수
+// ✅ 하루 요약 일기 생성
 async function summarizeHistory(history, tone = "기본") {
   const messages = [
     {
@@ -194,7 +228,9 @@ async function summarizeHistory(history, tone = "기본") {
   return res.choices[0].message.content;
 }
 
+// ✅ 내보내기
 module.exports = {
   chatWithContext,
   summarizeHistory,
+  classifyEmotionToThreeLevel
 };

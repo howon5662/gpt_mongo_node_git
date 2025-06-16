@@ -117,7 +117,8 @@ app.get("/calendarEmotion", async (req, res) => {
 
     const emotionList = diaries.map(entry => ({
       date: entry.diaryDate.toISOString().split("T")[0],
-      finalEmotion: entry.emotion
+      finalEmotion: entry.emotion  // 👉 실제 DB에는 'emotion' 필드지만, 프론트에서는 'finalEmotion'이라는 키로 받음, 이게 마지막 emojiEmotion
+
     }));
 
     res.json({ emotions: emotionList });
