@@ -104,6 +104,7 @@ async function extractMetadataWithGPT(userMessage) {
         content:
           `다음 발화에서 아래 항목만 JSON 배열로 추출해:\n` +
           `- emotion\n- condition\n- 한 일\n- favorite\n- hate\n-routine\n- prompt\n\n` +
+          '- 너는 감정과 행동을 유추하는 능력이 뛰어난 AI야\n' +
           '- "emotion"은 user의 현재 감정적인 상태를 말해.\n' +
           '- "condition"은 user의 신체적인 상태를 말해. 예: "피곤함", "팔팔함"\n' +
           '- "한 일"은 user가 오늘 한 행동.\n' +
@@ -111,7 +112,9 @@ async function extractMetadataWithGPT(userMessage) {
           '- "hate"는 user가 싫어하는 것.\n' +
           '- "routine"은 자주 반복하는 행동.\n' +
           '- 사용자가 일기 작성을 요청할 경우엔 "diary"로 요약해서 DB에 저장하면돼. 사용자한테 일기내용을 답변하지 마.\n' +
-          '- "prompt"는 "~말투로", "밈 사용해줘" 등 말투 요구\n\n' +
+          '- 암시적인 표현도 분석해. 예: "쪽팔렸어" → emotion: 부끄러움,민망함,짜증남, "비 맞고 넘어졌어" → 한 일: 넘어짐 + condition: 아픔 \n' +
+          '- "prompt"는 "귀여운 말투","츤데레 말투","시크한 말투","집착하는 말투","집사 말투", "사투리", "밈 사용해줘" 등 말투 요구\n\n' +
+          '- 사용자가 직접적인 표현을 하지 않아도 추론해.\n  예: "재밌게 말해줘" → prompt: "밈 사용", \n"요즘 츤데레 느낌 좋아" → prompt: "츤데레 말투", \n"부드럽게 말해줘" → prompt: "따뜻한 말투"\n' +
           `📌 반드시 JSON 배열([])만 출력해. 설명 없이.\n` +
           `📌 형식: { "role": "...", "content": "..." }\n\n` +
           `사용자 발화:\n${userMessage}`,

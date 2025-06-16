@@ -38,21 +38,33 @@ app.post("/chat", async (req, res) => {
 });
 
 // ✅ 프론트에서 date(보고싶은 날짜)전달 시 db에서 저장된 일기 조회
+// ✅ 기존 라우터에서 교체
 app.get("/diary", async (req, res) => {
   const userId = req.query.user_id;
-  const date = req.query.date;
-  if (!userId || !date) return res.status(400).json({ error: "user_id와 date가 필요합니다." });
+  const date = req.query.date; // 예: "2025-06-16"
+
+  if (!userId || !date) {
+    return res.status(400).json({ error: "user_id와 date가 필요합니다." });
+  }
+
   try {
     const db = client.db("gpt_project");
     const diaryCol = db.collection("diary");
-    const doc = await diaryCol.findOne({ user_id: userId, diaryDate: new Date(date) });
+
+    const doc = await diaryCol.findOne({
+      user_id: userId,
+      diaryDate: date  // 🆕 diaryDate 기준 조회
+    });
+
     if (!doc) return res.status(404).json({ error: "일기 없음" });
+
     res.json({ diary: doc.diary });
   } catch (err) {
     console.error("❌ 일기 조회 오류:", err);
     res.status(500).json({ error: "서버 오류" });
   }
 });
+
 
 // ✅ /writeDiary: 프론트에서 일기 작성 요청 시, 일기 생성 및 DB 저장
 app.post("/writeDiary", async (req, res) => {
@@ -69,6 +81,7 @@ app.post("/writeDiary", async (req, res) => {
 
 
 // ✅ calendarEmotion: 유저의 날짜별 감정 이모지 맵(모든 finalEmotion 한 번에) 반환
+// ✅ calendarEmotion: 유저의 날짜별 감정 이모지 맵 (배열 형태로 반환)
 app.get("/calendarEmotion", async (req, res) => {
   const { user_id } = req.query;
   if (!user_id) return res.status(400).json({ error: "user_id는 필수입니다." });
@@ -78,15 +91,14 @@ app.get("/calendarEmotion", async (req, res) => {
     const diaryCol = db.collection("diary");
     const diaries = await diaryCol.find({ user_id }).toArray();
 
-    const emotionMap = {};
-    diaries.forEach(entry => {
-      if (entry.diaryDate && entry.emotion) {
-        const dateStr = entry.diaryDate.toISOString().split("T")[0];
-        emotionMap[dateStr] = entry.emotion;
-      }
-    });
+    const emotionList = diaries
+      .filter(entry => entry.diaryDate && entry.emotion)
+      .map(entry => ({
+        date: entry.diaryDate.toISOString().split("T")[0],
+        finalEmotion: entry.emotion
+      }));
 
-    res.json(emotionMap);
+    res.json({ emotions: emotionList });
   } catch (err) {
     console.error("❌ calendarEmotion 오류:", err);
     res.status(500).json({ error: "서버 오류" });

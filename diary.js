@@ -65,6 +65,7 @@ async function generateDiarySinceLast(userId) {
   for (const e of emotionList) {
     if (!priority[finalEmotion] || (priority[e] && priority[e] < priority[finalEmotion])) {
       finalEmotion = e;
+      console.log("\n finalEmotion 출력 완료:\n", e);
     }
   }
 
