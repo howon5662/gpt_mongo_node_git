@@ -7,11 +7,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const diaryClient = new MongoClient(process.env.MONGODB_URI);
 const diaryDbName = "gpt_project";
 
-async function generateDiarySinceLast(userId) {
+async function generateDiarySinceLast(userId, diaryDate = null) {
   await diaryClient.connect();
   const db = diaryClient.db(diaryDbName);
-
   const diaryCol = db.collection("diary");
+
+  // 마지막 일기 이후 시간
   const lastDiary = await diaryCol.find({ user_id: userId })
     .sort({ diaryDate: -1 })
     .limit(1)
@@ -20,17 +21,23 @@ async function generateDiarySinceLast(userId) {
   const startTime = lastDiary[0]?.diaryDate || new Date(0);
   const now = new Date();
 
+  // 📅 일기 대상 날짜의 종료 시점 (23:59:59)
+  const endTime = diaryDate
+    ? new Date(diaryDate.getFullYear(), diaryDate.getMonth(), diaryDate.getDate(), 23, 59, 59, 999)
+    : now;
+
   const convCol = db.collection("conversations");
   const docs = await convCol.find({
     user_id: userId,
-    updated_at: { $gt: startTime, $lt: now }
+    updated_at: { $gt: startTime, $lt: endTime }
   }).sort({ updated_at: 1 }).toArray();
 
   if (docs.length === 0) {
-    console.log("❌ 일기 작성할 대화 없음");
+    console.log(`❌ ${userId} (${diaryDate?.toISOString().slice(0, 10) ?? "오늘"}) 일기 작성할 대화 없음`);
     return;
   }
 
+  // 📌 감정 / 컨디션 / 한 일 메타데이터 추출
   const metadata = [];
   docs.forEach(doc => {
     doc.messages.forEach(msg => {
@@ -58,40 +65,29 @@ async function generateDiarySinceLast(userId) {
 
   const diaryText = res.choices[0].message.content;
 
-  // 🧠 감정 우선순위 계산>finalEmotion추출
+  // 🧠 감정 우선순위 계산
   const emotionList = metadata.filter(m => m.role === "emotion").map(m => m.content);
   const priority = { "우울": 1, "슬픔": 1, "피곤": 2, "불안": 2, "고마움": 3, "행복": 3, "보통": 4 };
   let finalEmotion = "보통";
   for (const e of emotionList) {
     if (!priority[finalEmotion] || (priority[e] && priority[e] < priority[finalEmotion])) {
       finalEmotion = e;
-      console.log("\n finalEmotion 출력 완료:\n", e);
     }
   }
 
-  // 🕒 diaryTime 기준으로 diaryDate 계산
-  const settingsCol = db.collection("user_settings");
-  const userSettings = await settingsCol.findOne({ user_id: userId });
-  const diaryTimeStr = userSettings?.Diarytime || "03:00";
-  const [hour, minute] = diaryTimeStr.split(":" ).map(Number);
-  const diaryTimeToday = new Date(now);
-  diaryTimeToday.setHours(hour, minute, 0, 0);
-
-  let diaryDate;  //DB(diary)에 diary,finalEmotion저장
-  if (now < diaryTimeToday) {
-    diaryDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
-  } else {
-    diaryDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  }
+  // 📅 저장할 diaryDate 결정
+  const diaryDateToSave = diaryDate ?? ((now.getHours() < 6 || (now.getHours() === 6 && now.getMinutes() === 0))
+    ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+    : new Date(now.getFullYear(), now.getMonth(), now.getDate()));
 
   await diaryCol.insertOne({
     user_id: userId,
     diary: diaryText,
     emotion: finalEmotion,
-    diaryDate: diaryDate
+    diaryDate: diaryDateToSave
   });
 
-  console.log("\n📓 일기 작성 완료:\n", diaryText);
+  console.log(`📓 ${userId}의 일기 저장 완료 (${diaryDateToSave.toISOString().slice(0, 10)})`);
 }
 
 module.exports = { generateDiarySinceLast };
