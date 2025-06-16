@@ -1,7 +1,7 @@
 // 📁 diary.js
 const OpenAI = require("openai");
 const { MongoClient } = require("mongodb");
-const { classifyEmotionToThreeLevel } = require("./index"); // ✅ 추가
+const { classifyEmotionToThreeLevel } = require("./emojiEmotion"); // ✅ 추가
 require("dotenv").config();
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
