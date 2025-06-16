@@ -94,6 +94,7 @@ async function chatWithContext(userId, userMessage) {
   return gptResponse;
 }
 
+// ✅ 메타데이터 추출
 async function extractMetadataWithGPT(userMessage) {
   const res = await openai.chat.completions.create({
     model: "ft:gpt-4o-2024-08-06:team::Bg7G2QnF",
@@ -137,9 +138,9 @@ async function extractMetadataWithGPT(userMessage) {
 
 사용자 발화:
 ${userMessage}
-        `
-      }
-    ]
+        `.trim()
+      },
+    ],
   });
 
   const raw = res.choices[0].message.content.trim();
@@ -157,6 +158,7 @@ ${userMessage}
     return [];
   }
 }
+
 
 // ✅ system prompt 생성
 function buildSystemPrompt(metadata) {
