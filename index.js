@@ -94,7 +94,6 @@ async function chatWithContext(userId, userMessage) {
   return gptResponse;
 }
 
-// ✅ 메타데이터 추출
 async function extractMetadataWithGPT(userMessage) {
   const res = await openai.chat.completions.create({
     model: "ft:gpt-4o-2024-08-06:team::Bg7G2QnF",
@@ -102,46 +101,45 @@ async function extractMetadataWithGPT(userMessage) {
       {
         role: "system",
         content: `
-        넌 사용자 발화로부터 감정, 상태, 말투를 정밀하게 추출하는 JSON 파서야.
+넌 사용자 발화로부터 감정, 상태, 말투를 정밀하게 추출하는 JSON 파서야.
 
-        다음 발화에서 아래 항목만 JSON 배열로 추출해:
-        - emotion
-        - condition
-        - 한 일
-        - favorite
-        - hate
-        - routine
-        - prompt
+다음 발화에서 아래 항목만 JSON 배열로 추출해:
+- emotion
+- condition
+- 한 일
+- favorite
+- hate
+- routine
+- prompt
 
-        - 너는 감정과 행동을 유추하는 능력이 뛰어난 AI야
-        - "emotion"은 user의 현재 감정적인 상태를 말해.
-        - "condition"은 user의 신체적인 상태를 말해. 예: "피곤함", "팔팔함"
-        - "한 일"은 user가 오늘 한 행동.
-        - "favorite"은 user가 좋아하는 것.
-        - "hate"는 user가 싫어하는 것.
-        - "routine"은 자주 반복하는 행동.
-        - 사용자가 일기 작성을 요청할 경우엔 "diary"로 요약해서 DB에 저장하면돼. 사용자한테 일기내용을 답변하지 마.
+- 너는 감정과 행동을 유추하는 능력이 뛰어난 AI야
+- "emotion"은 user의 현재 감정적인 상태를 말해.
+- "condition"은 user의 신체적인 상태를 말해. 예: "피곤함", "팔팔함"
+- "한 일"은 user가 오늘 한 행동.
+- "favorite"은 user가 좋아하는 것.
+- "hate"는 user가 싫어하는 것.
+- "routine"은 자주 반복하는 행동.
+- 사용자가 일기 작성을 요청할 경우엔 "diary"로 요약해서 DB에 저장하면돼. 사용자한테 일기내용을 답변하지 마.
 
-        - 암시적인 표현도 분석해.
-          예: "쪽팔렸어" → emotion: 부끄러움,민망함,짜증남
-              "비 맞고 넘어졌어" → 한 일: 넘어짐 + condition: 아픔
+- 암시적인 표현도 분석해.
+  예: "쪽팔렸어" → emotion: 부끄러움,민망함,짜증남
+      "비 맞고 넘어졌어" → 한 일: 넘어짐 + condition: 아픔
 
-        - "prompt"는 "귀여운 말투","츤데레 말투","시크한 말투","집착하는 말투","집사 말투", "사투리", "밈 사용해줘" 등 말투 요구
+- "prompt"는 "귀여운 말투","츤데레 말투","시크한 말투","집착하는 말투","집사 말투", "사투리", "밈 사용해줘" 등 말투 요구
 
-        - 사용자가 직접적인 표현을 하지 않아도 추론해.
-          예: "재밌게 말해줘" → prompt: "밈 사용"
-              "요즘 츤데레 느낌 좋아" → prompt: "츤데레 말투"
-              "부드럽게 말해줘" → prompt: "따뜻한 말투"
+- 사용자가 직접적인 표현을 하지 않아도 추론해.
+  예: "재밌게 말해줘" → prompt: "밈 사용"
+      "요즘 츤데레 느낌 좋아" → prompt: "츤데레 말투"
+      "부드럽게 말해줘" → prompt: "따뜻한 말투"
 
-        📌 반드시 JSON 배열([])만 출력해. 설명 없이.
-        📌 형식: { "role": "...", "content": "..." }
+📌 반드시 JSON 배열([])만 출력해. 설명 없이.
+📌 형식: { "role": "...", "content": "..." }
 
-        사용자 발화:
-        ${userMessage}
+사용자 발화:
+${userMessage}
         `
-
-      },
-    ],
+      }
+    ]
   });
 
   const raw = res.choices[0].message.content.trim();
