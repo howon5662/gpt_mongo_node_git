@@ -57,7 +57,7 @@ async function generateDiarySinceLast(userId, diaryDate = null) {
   const diaryPrompt = [
     {
       role: "system",
-      content: `다음은 사용자의 하루 요약 정보야. 이를 바탕으로 감정과 컨디션을 반영한 짧은 일기 세 줄을 써줘. 말투는 자연스럽고 따뜻하게 부탁해.`
+      content: `다음은 사용자의 하루 요약 정보야. 이를 바탕으로 감정과 컨디션, 한 일을 반영한 짧은 일기를 한 문단 써줘. 말투는 자연스럽고 따뜻하게 부탁해.`
     },
     {
       role: "user",
