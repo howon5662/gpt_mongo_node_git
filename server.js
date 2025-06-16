@@ -41,9 +41,9 @@ app.post("/chat", async (req, res) => {
 // ✅ 기존 라우터에서 교체
 app.get("/diary", async (req, res) => {
   const userId = req.query.user_id;
-  const date = req.query.date; // 예: "2025-06-16"
+  const dateStr = req.query.date; // 예: "2025-06-16"
 
-  if (!userId || !date) {
+  if (!userId || !dateStr) {
     return res.status(400).json({ error: "user_id와 date가 필요합니다." });
   }
 
@@ -51,16 +51,26 @@ app.get("/diary", async (req, res) => {
     const db = client.db("gpt_project");
     const diaryCol = db.collection("diary");
 
-    const doc = await diaryCol
-      .find({ user_id: userId, diaryDate: date })
-      .sort({ _id: -1 }) // ← 최신 순으로 정렬
-      .limit(1)
-      .next(); // ← cursor에서 1개 가져오기
+    // ✅ 범위 날짜 계산 (KST 기준 하루 전체 범위)
+    const targetDate = new Date(dateStr); // 2025-06-16T00:00:00.000 (로컬 기준)
+    const nextDate = new Date(targetDate);
+    nextDate.setDate(targetDate.getDate() + 1);
 
+    const doc = await diaryCol
+      .find({
+        user_id: userId,
+        diaryDate: {
+          $gte: targetDate,
+          $lt: nextDate
+        }
+      })
+      .sort({ _id: -1 }) // 최신순 정렬
+      .limit(1)
+      .next(); // 커서에서 하나 꺼냄
 
     if (!doc) return res.status(404).json({ error: "일기 없음" });
 
-    res.json({ diary: doc.diary });
+    res.json({ diary: doc.diary, emotion: doc.emotion ?? null }); // 👈 감정도 함께 전송
   } catch (err) {
     console.error("❌ 일기 조회 오류:", err);
     res.status(500).json({ error: "서버 오류" });

@@ -7,12 +7,18 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const diaryClient = new MongoClient(process.env.MONGODB_URI);
 const diaryDbName = "gpt_project";
 
+// ✅ UTC → KST 자정 기준 날짜만 남기는 함수
+function getKSTDateOnly(date = new Date()) {
+  const kst = new Date(date.getTime() + 9 * 60 * 60 * 1000); // UTC → KST 변환
+  return new Date(kst.getFullYear(), kst.getMonth(), kst.getDate()); // KST 기준 자정 시간
+}
+
 async function generateDiarySinceLast(userId, diaryDate = null) {
   await diaryClient.connect();
   const db = diaryClient.db(diaryDbName);
   const diaryCol = db.collection("diary");
 
-  // 마지막 일기 이후 시간
+  // 📌 마지막 일기 이후 시간
   const lastDiary = await diaryCol.find({ user_id: userId })
     .sort({ diaryDate: -1 })
     .limit(1)
@@ -21,7 +27,7 @@ async function generateDiarySinceLast(userId, diaryDate = null) {
   const startTime = lastDiary[0]?.diaryDate || new Date(0);
   const now = new Date();
 
-  // 📅 일기 대상 날짜의 종료 시점 (23:59:59)
+  // 📌 일기 대상 대화 조회 종료 시점
   const endTime = diaryDate
     ? new Date(diaryDate.getFullYear(), diaryDate.getMonth(), diaryDate.getDate(), 23, 59, 59, 999)
     : now;
@@ -37,7 +43,7 @@ async function generateDiarySinceLast(userId, diaryDate = null) {
     return;
   }
 
-  // 📌 감정 / 컨디션 / 한 일 메타데이터 추출
+  // 📌 메타데이터 추출
   const metadata = [];
   docs.forEach(doc => {
     doc.messages.forEach(msg => {
@@ -75,10 +81,8 @@ async function generateDiarySinceLast(userId, diaryDate = null) {
     }
   }
 
-  // 📅 저장할 diaryDate 결정
-  const diaryDateToSave = diaryDate ?? ((now.getHours() < 6 || (now.getHours() === 6 && now.getMinutes() === 0))
-    ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
-    : new Date(now.getFullYear(), now.getMonth(), now.getDate()));
+  // ✅ KST 기준으로 저장할 일기 날짜 결정
+  const diaryDateToSave = diaryDate ?? getKSTDateOnly();
 
   await diaryCol.insertOne({
     user_id: userId,
