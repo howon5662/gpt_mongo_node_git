@@ -102,7 +102,7 @@ async function extractMetadataWithGPT(userMessage) {
       {
         role: "system",
         content: `
-넌 사용자 발화로부터 감정, 상태, 말투를 정밀하게 추출하는 JSON 파서야.
+넌 사용자 발화로부터 감정, 상태, 말투를 정밀하게 추출하는 AI야.
 
 다음 발화에서 아래 항목만 JSON 배열로 추출해:
 - emotion
