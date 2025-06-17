@@ -4,6 +4,8 @@ const { MongoClient } = require("mongodb");
 const { getUserContext } = require("./context");
 const { cleanOldMetadata } = require("./cleanup");
 const { generateDiarySinceLast } = require("./diary");
+const { classifyEmotionToThreeLevel } = require("./emojiEmotion");
+
 const axios = require("axios");
 require("dotenv").config();
 
