@@ -14,7 +14,7 @@ const dbName = "gpt_project";
 // ✅ RAG 응답
 async function retrieveRAGResponse(userMessage) {
   try {
-    const res = await axios.post("http://localhost:8000/rag", {
+    const res = await axios.post("http://210.125.91.93:8000/rag", {
       query: userMessage,
     });
     return {
