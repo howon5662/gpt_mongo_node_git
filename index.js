@@ -4,8 +4,6 @@ const { MongoClient } = require("mongodb");
 const { getUserContext } = require("./context");
 const { cleanOldMetadata } = require("./cleanup");
 const { generateDiarySinceLast } = require("./diary");
-const { classifyEmotionToThreeLevel } = require("./emojiEmotion");
-
 const axios = require("axios");
 require("dotenv").config();
 
@@ -16,7 +14,7 @@ const dbName = "gpt_project";
 // ✅ RAG 응답
 async function retrieveRAGResponse(userMessage) {
   try {
-    const res = await axios.post("http://210.125.91.93:8000/rag", {
+    const res = await axios.post("http://localhost:8000/rag", {
       query: userMessage,
     });
     return {
