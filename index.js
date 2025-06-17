@@ -158,57 +158,6 @@ ${userMessage}
   }
 }
 
-// ✅ 감정 단어 → "긍정/보통/부정" 3단계로 분류
-async function classifyEmotionToThreeLevel(finalEmotion) {
-  const prompt = [
-    {
-      role: "system",
-      content: `
-넌 사용자의 감정 단어를 받아서 다음 셋 중 하나로 분류하는 AI야.
-
-반드시 아래 중 하나로만 판단해서 출력해:
-- 긍정
-- 보통
-- 부정
-
-설명 없이 감정 이름만 출력해.
-예시:
-"행복" → 긍정
-"고마움" → 긍정
-"피곤" → 보통
-"짜증" → 부정
-"우울" → 부정
-`.trim()
-    },
-    {
-      role: "user",
-      content: `감정 단어: ${finalEmotion}`
-    }
-  ];
-
-  const res = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: prompt
-  });
-
-  return res.choices[0].message.content.trim(); // "긍정", "보통", "부정"
-}
-
-// ✅ system prompt 생성
-function buildSystemPrompt(metadata) {
-  let traits = [];
-
-  if (metadata.prompt && metadata.prompt.content)
-    traits.push(metadata.prompt.content);
-  if (metadata.favorite.length > 0)
-    traits.push(`사용자는 ${metadata.favorite[0].content}을(를) 좋아해`);
-  if (metadata.emotion.length > 0)
-    traits.push(`오늘 감정은 ${metadata.emotion[0].content}`);
-
-  return traits.length > 0
-    ? `넌 지금 ${traits.join(", ")} 스타일로 대답하는 AI야.`
-    : `넌 사용자와 친근하게 대화하는 AI야.`;
-}
 
 // ✅ 하루 요약 일기 생성
 async function summarizeHistory(history, tone = "기본") {
@@ -221,7 +170,7 @@ async function summarizeHistory(history, tone = "기본") {
   ];
 
   const res = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: "ft:gpt-4o-2024-08-06:team::Bg7G2QnF",
     messages,
   });
 
