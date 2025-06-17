@@ -11,6 +11,12 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const client = new MongoClient(process.env.MONGODB_URI);
 const dbName = "gpt_project";
 
+// ✅ 시스템 프롬프트 생성 함수 ← 이거 추가된 부분!
+function buildSystemPrompt(metadata) {
+  const tone = metadata.prompt?.content?.[0] ?? "기본";
+  return `너는 사용자의 감정과 취향을 고려해 반응하는 GPT야. 말투 스타일은 "${tone}"이야. 사용자에게 따뜻하게 응답해줘.`;
+}
+
 // ✅ RAG 응답
 async function retrieveRAGResponse(userMessage) {
   try {
@@ -157,7 +163,6 @@ ${userMessage}
     return [];
   }
 }
-
 
 // ✅ 하루 요약 일기 생성
 async function summarizeHistory(history, tone = "기본") {
